@@ -10,6 +10,7 @@ from torch.autograd import Variable
 # Load historical stock data from Yahoo Finance 1 stock lang sa for testingg 
 symbol = 'AYAAF'
 df = pd.read_csv(f'https://query1.finance.yahoo.com/v7/finance/download/{symbol}?period1=0&period2=9999999999&interval=1d&events=history')
+print (df)
 
 # Convert 'Date' column to datetime format
 df['Date'] = pd.to_datetime(df['Date'])
@@ -19,9 +20,30 @@ df = add_all_ta_features(df, open='Open', high='High', low='Low', close='Close',
 
 # Select relevant features and drop NaN values 
 # invalid data consists of empty and incomplete rows and cols
-df = df[['Date', 'Close', 'SMA', 'EMA', 'MACD', 'ADX', 'RSI', 'Stoch_Oscillator', 'Williams_%R', 'OBV', 'A/D_Line',
-         'ATR', 'Bollinger Bands', 'Keltner Channel']]
-df = df.dropna()
+# Select relevant features and drop NaN values 
+selected_columns = ['Date', 'Close', 'volume_adi', 'volume_obv', 'volume_cmf', 'volume_fi', 'volume_em',
+                    'volume_sma_em', 'volume_vpt', 'volume_nvi', 'volume_vwap', 'volatility_atr', 
+                    'volatility_bbh', 'volatility_bbl', 'volatility_bbm', 'volatility_bbhi', 'volatility_bbli',
+                    'volatility_kcc', 'volatility_kch', 'volatility_kcl', 'volatility_kchi', 'volatility_kcli',
+                    'volatility_dch', 'volatility_dcl', 'trend_macd', 'trend_macd_signal', 'trend_macd_diff',
+                    'trend_sma_fast', 'trend_sma_slow', 'trend_ema_fast', 'trend_ema_slow', 'trend_adx', 'trend_adx_pos',
+                    'trend_adx_neg', 'trend_vortex_ind_pos', 'trend_vortex_ind_neg', 'trend_trix', 
+                    'trend_mass_index', 'trend_dpo', 'trend_kst', 'trend_kst_sig', 'trend_kst_diff', 
+                    'trend_ichimoku_conv', 'trend_ichimoku_base', 'trend_ichimoku_a', 'trend_ichimoku_b',
+                    'trend_visual_ichimoku_a', 'trend_visual_ichimoku_b', 'trend_aroon_up', 'trend_aroon_down', 
+                    'trend_aroon_ind', 'momentum_rsi', 'momentum_tsi', 'momentum_uo', 'momentum_stoch', 
+                    'momentum_stoch_signal', 'momentum_wr', 'momentum_ao', 'momentum_roc', 'others_dr', 
+                    'others_dlr', 'others_cr']
+df = df[selected_columns].dropna()
+print (df)
+
+
+if df.shape[0] == 0:
+    print("No samples left after dropping columns. Please check your data.")
+else:
+    # Normalize the data
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaled_data = scaler.fit_transform(df.drop(['Date', 'Close'], axis=1).values)
 
 # Normalize the data
 scaler = MinMaxScaler(feature_range=(0, 1))
