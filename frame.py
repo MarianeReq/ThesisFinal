@@ -1,6 +1,5 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
-#import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -9,7 +8,7 @@ from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 # Download historical data from Yahoo Finance
-stock_data = yf.download('AYAAY', start='2020-01-01', end='2024-01-01')
+stock_data = yf.download('AYAAY', start='2020-01-01', end='2024-02-29')
 
 # Selecting relevant features
 features = stock_data[['Open', 'High', 'Low', 'Close', 'Volume']]
@@ -49,19 +48,27 @@ early_stopping = EarlyStopping(patience=5, restore_best_weights=True)
 history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
 # Predicting the open price
-predicted_open_price = model.predict(X_test[-1:])
-print("Predicted Open Price:", predicted_open_price * (features['Open'].max() - features['Open'].min()) + features['Open'].min())
+predicted_open_price_scaled = model.predict(X_test[-1:])
+predicted_open_price = predicted_open_price_scaled * (features['Open'].max() - features['Open'].min()) + features['Open'].min()
 
 # Extracting the open prices for the last week
 recent_open_prices = stock_data['Open']
+
+# Extracting the last observed open price
+last_observed_open_price = recent_open_prices.iloc[-1]
+
+# Determine if the predicted trend is upward or downward
+trend = "Upward" if predicted_open_price > last_observed_open_price else "Downward"
+
+print("Predicted Open Price:", predicted_open_price)
+print("Trend:", trend)
 
 # Plotting the recent open prices
 plt.figure(figsize=(10, 6))
 plt.plot(recent_open_prices.index, recent_open_prices.values, label='Recent Open Prices', marker='o')
 
 # Plotting the predicted open price
-predicted_open_price = 18.43  # Replace with your predicted value
-plt.axhline(y=predicted_open_price, color='r', linestyle='--', label='Predicted Open Price')
+plt.axhline(y=predicted_open_price, color='r', linestyle='--', label=f'Predicted Open Price ({trend} trend)')
 
 # Adding labels and title
 plt.xlabel('Date')
