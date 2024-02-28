@@ -1,6 +1,6 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
-# import pandas as pd
+#import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -9,7 +9,7 @@ from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 # Download historical data from Yahoo Finance
-stock_data = yf.download('AYAAY', start='2014-01-01', end='2024-01-01')
+stock_data = yf.download('AYAAY', start='2020-01-01', end='2024-01-01')
 
 # Selecting relevant features
 features = stock_data[['Open', 'High', 'Low', 'Close', 'Volume']]
