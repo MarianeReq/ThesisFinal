@@ -64,10 +64,12 @@ class DatePickerView(QWidget):
             self.end_date_label.setText("End Date: " + selected_date.toString(Qt.DateFormat.ISODate))
             self.end_date_selected = True
             self.close()  # Close the calendar after selecting the end date
+            self.is_start_date_picker = True  # Reset to start date picker mode
 
         # Enable predict button if both start and end dates are selected
         if self.start_date_selected and self.end_date_selected:
             self.predict_button.setEnabled(True)
+
 
     def reset_dates(self):
         self.calendar.setSelectedDate(QDate.currentDate())
