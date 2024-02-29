@@ -12,10 +12,11 @@ from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 class DatePickerView(QWidget):
-    def __init__(self, is_start_date_picker):
+    def __init__(self, is_start_date_picker, stock):
         super().__init__()
 
         self.is_start_date_picker = is_start_date_picker
+        self.stock = stock
 
         layout = QVBoxLayout()
 
@@ -56,7 +57,7 @@ class DatePickerView(QWidget):
             self.start_date_selected = True
             self.close()  # Close the calendar after selecting the start date
             self.is_start_date_picker = False  # Change to end date picker mode
-            end_date_picker = DatePickerView(False)
+            end_date_picker = DatePickerView(False, self.stock)
             end_date_picker.setWindowTitle("End Date Picker")
             end_date_picker.show()
         else:
@@ -82,7 +83,7 @@ class DatePickerView(QWidget):
             return
 
         # Download historical data from Yahoo Finance
-        stock_data = yf.download('AYAAY', start=self.start_date_label.text()[len("Start Date: "):], end=self.end_date_label.text()[len("End Date: "):])
+        stock_data = yf.download(self.stock, start=self.start_date_label.text()[len("Start Date: "):], end=self.end_date_label.text()[len("End Date: "):])
 
         # Selecting relevant features
         features = stock_data[['Open', 'High', 'Low', 'Close', 'Volume']]
@@ -206,6 +207,7 @@ class MainWindow(QWidget):
                 background-color: #241e32;
             }
         """)
+        rblay_button.clicked.connect(lambda: self.open_date_picker_for_stock('RBLAY'))  # Pass 'RBLAY' as argument
         layout.addWidget(rblay_button)
 
         alaay_button = QPushButton("ALAAY", self)
@@ -225,7 +227,7 @@ class MainWindow(QWidget):
                 background-color: #241e32;
             }
         """)
-        alaay_button.clicked.connect(self.open_date_picker)
+        alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('ALAAY'))  # Pass 'ALAAY' as argument
         layout.addWidget(alaay_button)
 
         footer_label = QLabel("The Survivors (?)", self)
@@ -242,10 +244,10 @@ class MainWindow(QWidget):
         # Member variable to hold DatePickerView instance
         self.date_picker_view = None
 
-    def open_date_picker(self):
+    def open_date_picker_for_stock(self, stock):
         # Create an instance of DatePickerView if not already created
         if not self.date_picker_view:
-            self.date_picker_view = DatePickerView(True)
+            self.date_picker_view = DatePickerView(True, stock)
 
         # Show DatePickerView
         self.date_picker_view.setWindowTitle("Start Date Picker")
