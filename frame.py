@@ -8,7 +8,7 @@ from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 # Download historical data from Yahoo Finance
-stock_data = yf.download('AYAAY', start='2020-01-01', end='2024-02-29')
+stock_data = yf.download('AYAAY', start='2020-01-01', end='2024-02-28')
 
 # Selecting relevant features
 features = stock_data[['Open', 'High', 'Low', 'Close', 'Volume']]
