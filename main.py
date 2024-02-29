@@ -78,6 +78,8 @@ class DatePickerView(QWidget):
         self.start_date_selected = False
         self.end_date_selected = False
         self.predict_button.setEnabled(False)
+        self.is_start_date_picker = True  # Reset to start date picker mode
+
 
     def predict(self):
         if not (self.start_date_selected and self.end_date_selected):
@@ -192,45 +194,16 @@ class MainWindow(QWidget):
         """)
         layout.addWidget(select_stock_label)
 
-        rblay_button = QPushButton("RBLAY", self)
-        rblay_button.setStyleSheet("""
-            QPushButton {
-                color: #ffffff;
-                background-color: #342d4f;
-                border-radius: 20px;
-                font-size: 36px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #483f62;
-            }
-            QPushButton:pressed {
-                background-color: #241e32;
-            }
-        """)
-        rblay_button.clicked.connect(lambda: self.open_date_picker_for_stock('RBLAY'))  # Pass 'RBLAY' as argument
-        layout.addWidget(rblay_button)
+        # Create stock buttons
+        self.rblay_button = QPushButton("RBLAY", self)
+        self.set_button_style(self.rblay_button)
+        self.rblay_button.clicked.connect(lambda: self.open_date_picker_for_stock('RBLAY'))  # Pass 'RBLAY' as argument
+        layout.addWidget(self.rblay_button)
 
-        alaay_button = QPushButton("ALAAY", self)
-        alaay_button.setStyleSheet("""
-            QPushButton {
-                color: #ffffff;
-                background-color: #342d4f;
-                border-radius: 20px;
-                font-size: 36px;
-                font-weight: bold;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #483f62;
-            }
-            QPushButton:pressed {
-                background-color: #241e32;
-            }
-        """)
-        alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('AYAAY'))  # Pass 'AYAAY' as argument
-        layout.addWidget(alaay_button)
+        self.alaay_button = QPushButton("ALAAY", self)
+        self.set_button_style(self.alaay_button)
+        self.alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('AYAAY'))  # Pass 'AYAAY' as argument
+        layout.addWidget(self.alaay_button)
 
         footer_label = QLabel("The Survivors (?)", self)
         footer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -247,6 +220,16 @@ class MainWindow(QWidget):
         self.date_picker_view = None
 
     def open_date_picker_for_stock(self, stock):
+        # Disable the other button
+        if stock == 'RBLAY':
+            self.alaay_button.setEnabled(False)
+            self.set_button_style(self.alaay_button, enabled=False)
+            other_stock = 'AYAAY'
+        else:
+            self.rblay_button.setEnabled(False)
+            self.set_button_style(self.rblay_button, enabled=False)
+            other_stock = 'RBLAY'
+
         # Create an instance of DatePickerView if not already created
         if not self.date_picker_view:
             self.date_picker_view = DatePickerView(True, stock)
@@ -254,6 +237,42 @@ class MainWindow(QWidget):
         # Show DatePickerView
         self.date_picker_view.setWindowTitle("Start Date Picker")
         self.date_picker_view.show()
+
+    def reset_buttons(self):
+        self.rblay_button.setEnabled(True)
+        self.set_button_style(self.rblay_button, enabled=True)
+        self.alaay_button.setEnabled(True)
+        self.set_button_style(self.alaay_button, enabled=True)
+
+    def set_button_style(self, button, enabled=True):
+        if enabled:
+            button.setStyleSheet("""
+                QPushButton {
+                    color: #ffffff;
+                    background-color: #342d4f;
+                    border-radius: 20px;
+                    font-size: 36px;
+                    font-weight: bold;
+                    padding: 10px 20px;
+                }
+                QPushButton:hover {
+                    background-color: #483f62;
+                }
+                QPushButton:pressed {
+                    background-color: #241e32;
+                }
+            """)
+        else:
+            button.setStyleSheet("""
+                QPushButton {
+                    color: #ffffff;
+                    background-color: #888888;
+                    border-radius: 20px;
+                    font-size: 36px;
+                    font-weight: bold;
+                    padding: 10px 20px;
+                }
+            """)
 
 
 if __name__ == "__main__":
