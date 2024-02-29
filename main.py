@@ -49,6 +49,17 @@ class DatePickerView(QWidget):
         # Member variables to track selected dates
         self.start_date_selected = False
         self.end_date_selected = False
+        
+        # Connect slot to restrict date selection
+        self.calendar.selectionChanged.connect(self.restrict_date_selection)
+
+    def restrict_date_selection(self):
+        selected_date = self.calendar.selectedDate()
+        current_date = QDate.currentDate()
+        if selected_date > current_date:
+            QMessageBox.warning(self, "Warning", "Please select a date not greater than the current date.")
+            self.calendar.setSelectedDate(current_date)
+        
 
     def update_selected_dates(self):
         selected_date = self.calendar.selectedDate()
