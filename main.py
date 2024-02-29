@@ -227,7 +227,7 @@ class MainWindow(QWidget):
                 background-color: #241e32;
             }
         """)
-        alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('ALAAY'))  # Pass 'ALAAY' as argument
+        alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('AYAAY'))  # Pass 'AYAAY' as argument
         layout.addWidget(alaay_button)
 
         footer_label = QLabel("The Survivors (?)", self)
