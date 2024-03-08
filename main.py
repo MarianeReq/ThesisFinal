@@ -3,9 +3,9 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
 import ta
-from PyQt6.QtWidgets import QMessageBox, QCheckBox
+from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget, QCheckBox
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
@@ -13,12 +13,12 @@ from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
 
 class DatePickerView(QWidget):
-    def __init__(self, is_start_date_picker, stock):
+    def __init__(self, is_start_date_picker, stock, selected_indicators):
         super().__init__()
 
         self.is_start_date_picker = is_start_date_picker
         self.stock = stock
-        self.selected_technical_indicators = []
+        self.selected_indicators = selected_indicators
 
         layout = QVBoxLayout()
 
@@ -34,10 +34,21 @@ class DatePickerView(QWidget):
         self.calendar.selectionChanged.connect(self.update_selected_dates)
         layout.addWidget(self.calendar)
 
-        # Add checkboxes for selecting technical indicators
-        self.checkbox_layout = QVBoxLayout()
-        self.add_technical_indicator_checkboxes()
-        layout.addLayout(self.checkbox_layout)
+        # Add indicator selection checkboxes
+        indicator_types = {
+            'Trend': ['Simple Moving Average (SMA)', 'Exponential Moving Average (EMA)', 'Moving Average Convergence Divergence (MACD)', 'Average Directional Index (ADX)'],
+            'Momentum': ['Relative Strength Index (RSI)', 'Stochastic Oscillator', 'Williams %R'],
+            'Volume': ['On Balance Volume (OBV)', 'Accumulation/Distribution Line (A/D Line)'],
+            'Volatility': ['Average True Range (ATR)', 'Bollinger Bands (BBM)', 'Bollinger Bands (BBH)', 'Bollinger Bands (BBL)', 'Keltner’s Channel (KCC)', 'Keltner’s Channel (KCH)', 'Keltner’s Channel (KCL)']
+        }
+        self.indicator_checkboxes = {}
+        for category, indicators in indicator_types.items():
+            layout.addWidget(QLabel(category))
+            for indicator in indicators:
+                checkbox = QCheckBox(indicator, self)
+                checkbox.setChecked(indicator in self.selected_indicators)
+                layout.addWidget(checkbox)
+                self.indicator_checkboxes[indicator] = checkbox
 
         # Add predict button (initially disabled)
         # Enable if both dates != null
@@ -59,34 +70,6 @@ class DatePickerView(QWidget):
         
         # Connect slot to restrict date selection
         self.calendar.selectionChanged.connect(self.restrict_date_selection)
-        
-        # Add QLabel for displaying prediction results
-        self.prediction_label = QLabel("", self)
-        layout.addWidget(self.prediction_label)
-        
-        
-    def add_technical_indicator_checkboxes(self):
-        technical_indicators = [
-            'trend_sma_fast', 'trend_ema_fast', 'trend_macd', 'trend_adx', 
-            'momentum_rsi', 'momentum_stoch', 'momentum_wr', 
-            'volume_obv', 'volume_cmf', 'volatility_atr', 
-            'volatility_bbm', 'volatility_bbh', 'volatility_bbl', 
-            'volatility_bbw', 'volatility_bbp', 
-            'trend_kst', 'trend_macd_signal', 'trend_macd_diff'
-        ]
-        for indicator in technical_indicators:
-            checkbox = QCheckBox(indicator, self)
-            checkbox.stateChanged.connect(self.update_selected_indicators)
-            self.checkbox_layout.addWidget(checkbox)
-
-    def update_selected_indicators(self, state):
-        checkbox = self.sender()
-        indicator_name = checkbox.text()
-        if state == Qt.CheckState.Checked:
-            self.selected_technical_indicators.append(indicator_name)
-        else:
-            self.selected_technical_indicators.remove(indicator_name) if indicator_name in self.selected_technical_indicators else None
-
 
     def restrict_date_selection(self):
         selected_date = self.calendar.selectedDate()
@@ -101,27 +84,15 @@ class DatePickerView(QWidget):
         
         # Check if it's start date picker mode
         if self.is_start_date_picker:
-            # Check if selected start date is after the currently set end date
-            if self.end_date_selected and selected_date > self.end_date:
-                # Show a message indicating the error
-                QMessageBox.warning(self, "Error", "Start date cannot be after the end date.")
-                return
-            
             self.start_date_label.setText("Start Date: " + selected_date.toString(Qt.DateFormat.ISODate))
             self.start_date_selected = True
             self.start_date = selected_date  # Set the start date
             self.close()  # Close the calendar after selecting the start date
             self.is_start_date_picker = False  # Change to end date picker mode
-            end_date_picker = DatePickerView(False, self.stock)
+            end_date_picker = DatePickerView(False, self.stock, self.selected_indicators)
             end_date_picker.setWindowTitle("End Date Picker")
             end_date_picker.show()
         else:
-            # Check if selected end date is before the currently set start date
-            if self.start_date_selected and selected_date < self.start_date:
-                # Show a message indicating the error
-                QMessageBox.warning(self, "Error", "End date cannot be before the start date.")
-                return
-            
             self.end_date_label.setText("End Date: " + selected_date.toString(Qt.DateFormat.ISODate))
             self.end_date_selected = True
             self.end_date = selected_date  # Set the end date
@@ -141,8 +112,7 @@ class DatePickerView(QWidget):
         self.end_date_selected = False
         self.predict_button.setEnabled(False)
         self.is_start_date_picker = True  # Reset to start date picker mode
-        self.selected_technical_indicators = []
-        self.update_selected_indicators(Qt.CheckState.Unchecked)
+
 
 
     def predict(self):
@@ -153,10 +123,19 @@ class DatePickerView(QWidget):
         # Download historical data from Yahoo Finance
         stock_data = yf.download(self.stock, start=self.start_date_label.text()[len("Start Date: "):], end=self.end_date_label.text()[len("End Date: "):])
 
-        # Calculate selected technical indicators
+        # Calculate technical indicators
         stock_data = ta.add_all_ta_features(stock_data, open="Open", high="High", low="Low", close="Close", volume="Volume", fillna=True)
-        selected_features = ['Open', 'High', 'Low', 'Close', 'Volume'] + self.selected_technical_indicators
-        features = stock_data[selected_features]
+
+        # Selecting relevant features including technical indicators
+        features = stock_data[['Open', 'High', 'Low', 'Close', 'Volume']]
+
+        # Drop selected indicators not included
+        selected_indicators = [indicator for indicator, checkbox in self.indicator_checkboxes.items() if checkbox.isChecked()]
+        for indicator in selected_indicators:
+            stock_data.drop(columns=[f"{indicator.lower()}_{param}" for param in ta.utils.dropna(stock_data) if f"{indicator.lower()}_{param}" in stock_data.columns], inplace=True)
+
+        # Print column names to verify correct column names
+        print(stock_data.columns)
 
         # Scaling features
         scaler = MinMaxScaler()
@@ -172,7 +151,6 @@ class DatePickerView(QWidget):
         # Reshape data for LSTM input
         X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
         X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
-
 
         # Building the LSTM model
         model = Sequential()
@@ -229,13 +207,9 @@ class DatePickerView(QWidget):
         plt.grid(True)
         plt.tight_layout()
         plt.show()
-        
-        # Extracting the scalar value from the NumPy array
-        predicted_open_price_scalar = predicted_open_price.item()
 
-        # Update prediction label with results
-        prediction_text = f"Predicted Open Price: {predicted_open_price_scalar:.2f}\nTrend: {trend}"
-        self.prediction_label.setText(prediction_text)
+
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -293,6 +267,11 @@ class MainWindow(QWidget):
         self.date_picker_view = None
 
     def open_date_picker_for_stock(self, stock):
+        selected_indicators = []
+        if self.date_picker_view:
+            selected_indicators = self.date_picker_view.selected_indicators
+            self.date_picker_view.close()
+
         # Disable the other button
         if stock == 'RBLAY':
             self.alaay_button.setEnabled(False)
@@ -305,7 +284,7 @@ class MainWindow(QWidget):
 
         # Create an instance of DatePickerView if not already created
         if not self.date_picker_view:
-            self.date_picker_view = DatePickerView(True, stock)
+            self.date_picker_view = DatePickerView(True, stock, selected_indicators)
 
         # Show DatePickerView
         self.date_picker_view.setWindowTitle("Start Date Picker")
@@ -346,7 +325,6 @@ class MainWindow(QWidget):
                     padding: 10px 20px;
                 }
             """)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
