@@ -5,7 +5,7 @@ import numpy as np
 import ta
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget, QCheckBox
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget, QCheckBox, QGroupBox
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
@@ -34,6 +34,9 @@ class DatePickerView(QWidget):
         self.calendar.selectionChanged.connect(self.update_selected_dates)
         layout.addWidget(self.calendar)
 
+        # Group boxes to organize indicator checkboxes
+        indicator_groupboxes = {}
+
         # Add indicator selection checkboxes
         indicator_types = {
             'Trend': ['Simple Moving Average (SMA)', 'Exponential Moving Average (EMA)', 'Moving Average Convergence Divergence (MACD)', 'Average Directional Index (ADX)'],
@@ -41,14 +44,16 @@ class DatePickerView(QWidget):
             'Volume': ['On Balance Volume (OBV)', 'Accumulation/Distribution Line (A/D Line)'],
             'Volatility': ['Average True Range (ATR)', 'Bollinger Bands Middle (BBM)', 'Bollinger Bands High (BBH)', 'Bollinger Bands Low (BBL)', 'Keltner’s Channel Center (KCC)', 'Keltner’s Channel High (KCH)', 'Keltner’s Channel Low (KCL)']
         }
-        self.indicator_checkboxes = {}
+
         for category, indicators in indicator_types.items():
-            layout.addWidget(QLabel(category))
+            indicator_groupboxes[category] = QGroupBox(category)
+            indicator_layout = QVBoxLayout()
             for indicator in indicators:
                 checkbox = QCheckBox(indicator, self)
                 checkbox.setChecked(indicator in self.selected_indicators)
-                layout.addWidget(checkbox)
-                self.indicator_checkboxes[indicator] = checkbox
+                indicator_layout.addWidget(checkbox)
+            indicator_groupboxes[category].setLayout(indicator_layout)
+            layout.addWidget(indicator_groupboxes[category])
 
         # Add predict button (initially disabled)
         # Enable if both dates != null
