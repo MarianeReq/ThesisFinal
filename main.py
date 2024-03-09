@@ -20,6 +20,8 @@ class DatePickerView(QWidget):
         self.stock = stock
         self.selected_indicators = selected_indicators
 
+        self.indicator_checkboxes = {}  # Initialize indicator_checkboxes dictionary
+
         layout = QVBoxLayout()
 
         # Add labels for displaying selected dates
@@ -52,6 +54,7 @@ class DatePickerView(QWidget):
                 checkbox = QCheckBox(indicator, self)
                 checkbox.setChecked(indicator in self.selected_indicators)
                 indicator_layout.addWidget(checkbox)
+                self.indicator_checkboxes[indicator] = checkbox  # Add checkbox to indicator_checkboxes dictionary
             indicator_groupboxes[category].setLayout(indicator_layout)
             layout.addWidget(indicator_groupboxes[category])
 
@@ -117,6 +120,11 @@ class DatePickerView(QWidget):
         self.end_date_selected = False
         self.predict_button.setEnabled(False)
         self.is_start_date_picker = True  # Reset to start date picker mode
+
+        # Reset all checkbox states to unchecked
+        for checkbox in self.indicator_checkboxes.values():
+            checkbox.setChecked(False)
+
 
 
 
