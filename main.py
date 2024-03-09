@@ -39,7 +39,7 @@ class DatePickerView(QWidget):
             'Trend': ['Simple Moving Average (SMA)', 'Exponential Moving Average (EMA)', 'Moving Average Convergence Divergence (MACD)', 'Average Directional Index (ADX)'],
             'Momentum': ['Relative Strength Index (RSI)', 'Stochastic Oscillator', 'Williams %R'],
             'Volume': ['On Balance Volume (OBV)', 'Accumulation/Distribution Line (A/D Line)'],
-            'Volatility': ['Average True Range (ATR)', 'Bollinger Bands (BBM)', 'Bollinger Bands (BBH)', 'Bollinger Bands (BBL)', 'Keltner’s Channel (KCC)', 'Keltner’s Channel (KCH)', 'Keltner’s Channel (KCL)']
+            'Volatility': ['Average True Range (ATR)', 'Bollinger Bands Middle (BBM)', 'Bollinger Bands High (BBH)', 'Bollinger Bands Low (BBL)', 'Keltner’s Channel Center (KCC)', 'Keltner’s Channel High (KCH)', 'Keltner’s Channel Low (KCL)']
         }
         self.indicator_checkboxes = {}
         for category, indicators in indicator_types.items():
