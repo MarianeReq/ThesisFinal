@@ -98,6 +98,6 @@ class DatePickerView(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    date_picker_view = DatePickerView("AYAAF")
+    date_picker_view = DatePickerView("RBLAY")
     sys.exit(app.exec())
 
