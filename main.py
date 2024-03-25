@@ -65,10 +65,15 @@ class DatePickerView(QWidget):
         self.predict_button.clicked.connect(self.predict)
         layout.addWidget(self.predict_button, alignment=Qt.AlignmentFlag.AlignRight)
 
+        # Add select all button below the predict button
+        self.select_all_button = QPushButton("Select All", self)
+        self.select_all_button.clicked.connect(self.select_all)
+        layout.addWidget(self.select_all_button, alignment=Qt.AlignmentFlag.AlignRight)
+
         # Add reset button
         self.reset_button = QPushButton("Reset", self)
         self.reset_button.clicked.connect(self.reset_dates)
-        layout.addWidget(self.reset_button)
+        layout.addWidget(self.reset_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.setLayout(layout)
 
@@ -78,6 +83,10 @@ class DatePickerView(QWidget):
         
         # Connect slot to restrict date selection
         self.calendar.selectionChanged.connect(self.restrict_date_selection)
+
+    def select_all(self):
+        for checkbox in self.indicator_checkboxes.values():
+            checkbox.setChecked(True)
 
     def restrict_date_selection(self):
         selected_date = self.calendar.selectedDate()
@@ -260,9 +269,9 @@ class MainWindow(QWidget):
         self.rblay_button.clicked.connect(lambda: self.open_date_picker_for_stock('RBLAY'))  # Pass 'RBLAY' as argument
         layout.addWidget(self.rblay_button)
 
-        self.alaay_button = QPushButton("ALAAY", self)
+        self.alaay_button = QPushButton("AYAAF", self)
         self.set_button_style(self.alaay_button)
-        self.alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('AYAAY'))  # Pass 'AYAAY' as argument
+        self.alaay_button.clicked.connect(lambda: self.open_date_picker_for_stock('AYAAF'))  # Pass 'AYAAF' as argument
         layout.addWidget(self.alaay_button)
 
         footer_label = QLabel("The Survivors (?)", self)
@@ -289,7 +298,7 @@ class MainWindow(QWidget):
         if stock == 'RBLAY':
             self.alaay_button.setEnabled(False)
             self.set_button_style(self.alaay_button, enabled=False)
-            other_stock = 'AYAAY'
+            other_stock = 'AYAAF'
         else:
             self.rblay_button.setEnabled(False)
             self.set_button_style(self.rblay_button, enabled=False)
