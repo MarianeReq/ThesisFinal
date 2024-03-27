@@ -46,7 +46,7 @@ class TechnicalIndicatorSelection(QWidget):
         # Submit button
         submit_button = QPushButton("Submit")
         submit_button.clicked.connect(self.on_submit) 
-        layout.addWidget(self.submit_button)
+        layout.addWidget(self.on_submit)
 
         self.setLayout(layout)
 
