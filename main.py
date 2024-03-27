@@ -46,17 +46,21 @@ class TechnicalIndicatorSelection(QWidget):
         # Submit button
         submit_button = QPushButton("Submit")
         submit_button.clicked.connect(self.on_submit) 
-        layout.addWidget(self.on_submit)
+        layout.addWidget(submit_button)
 
         self.setLayout(layout)
 
     def on_submit(self):
+        #Create a list for checked indicators
+        self.checked_indicators = []
+
           # Clear the list before gathering new checked indicators
         self.checked_indicators.clear()
 
         # Gather the checked technical indicators from each container
         for container in [self.trend_container, self.momentum_container, self.volume_container, self.volatility_container]:
-            category_name = container.title()
+            category_label = container.findChild(QLabel)
+            category_name = category_label.text() if category_label else ""
             for checkbox in container.findChildren(QCheckBox):
                 if checkbox.isChecked():
                     indicator_name = checkbox.text()
