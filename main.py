@@ -1,7 +1,8 @@
 import sys
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget, QCalendarWidget, QCheckBox
+from PyQt6.QtGui import QFont
 import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,77 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout
 from keras.callbacks import EarlyStopping
+import ta
+
+class TechnicalIndicatorSelection(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Technical Indicator Selection")
+        self.setGeometry(100, 100, 600, 400)
+
+        layout = QVBoxLayout()
+
+        # Main heading
+        main_heading = QLabel("Technical Indicator Selection")
+        main_heading.setFont(QFont("Arial", 20))  # Adjust "Arial" to your preferred font family
+        layout.addWidget(main_heading)
+
+        # Trend Indicators container
+        self.trend_container = self.create_indicator_container("Trend Indicators", ["SMA", "EMA", "MACD", "ADX", "CCI"])
+        layout.addWidget(self.trend_container)
+
+        # Momentum Indicators container
+        self.momentum_container = self.create_indicator_container("Momentum Indicators", ["RSI", "Stochastic Oscillator", "Williams %R"])
+        layout.addWidget(self.momentum_container)
+
+        # Volume Indicators container
+        self.volume_container = self.create_indicator_container("Volume Indicators", ["OBV", "A/D Line"])
+        layout.addWidget(self.volume_container)
+
+        # Volatility Indicators container
+        self.volatility_container = self.create_indicator_container("Volatility Indicators", ["ATR", "Bollinger Bands", "Keltner's Channel"])
+        layout.addWidget(self.volatility_container)
+
+        # Submit button
+        submit_button = QPushButton("Submit")
+        submit_button.clicked.connect(self.on_submit) 
+        layout.addWidget(self.submit_button)
+
+        self.setLayout(layout)
+
+    def on_submit(self):
+          # Clear the list before gathering new checked indicators
+        self.checked_indicators.clear()
+
+        # Gather the checked technical indicators from each container
+        for container in [self.trend_container, self.momentum_container, self.volume_container, self.volatility_container]:
+            category_name = container.title()
+            for checkbox in container.findChildren(QCheckBox):
+                if checkbox.isChecked():
+                    indicator_name = checkbox.text()
+                    self.checked_indicators.append((category_name, indicator_name))
+
+        # Print the checked indicators
+        print("Checked Indicators for Prediction:", self.checked_indicators)
+
+
+   
+    def create_indicator_container(self, heading, indicators):
+        container = QWidget()
+        container.setObjectName("indicator-container")
+
+        heading_label = QLabel(heading)
+        indicators_checkboxes = [QCheckBox(indicator) for indicator in indicators]
+
+        container_layout = QVBoxLayout()
+        container_layout.addWidget(heading_label)
+
+        for checkbox in indicators_checkboxes:
+            container_layout.addWidget(checkbox)
+
+        container.setLayout(container_layout)
+        return container
 
 class DatePickerView(QWidget):
     def __init__(self, is_start_date_picker, stock):
@@ -32,6 +104,11 @@ class DatePickerView(QWidget):
         self.calendar.selectionChanged.connect(self.update_selected_dates)
         layout.addWidget(self.calendar)
 
+       #Select TI button
+        self.ti_selection_button = QPushButton("Select TIs", self)
+        self.ti_selection_button.clicked.connect(self.go_to_ti_selection)
+        layout.addWidget(self.ti_selection_button)
+       
         # Add predict button (initially disabled)
         # Enable if both dates != null
         self.predict_button = QPushButton("Predict", self)
@@ -52,6 +129,18 @@ class DatePickerView(QWidget):
         
         # Connect slot to restrict date selection
         self.calendar.selectionChanged.connect(self.restrict_date_selection)
+        
+
+    def go_to_ti_selection(self):
+        
+        # Create an instance of the TechnicalIndicatorSelection widget
+        self.ti_selection_widget = TechnicalIndicatorSelection()
+
+        # Show the TechnicalIndicatorSelection widget
+        self.ti_selection_widget.show()
+    
+    
+
 
     def restrict_date_selection(self):
         selected_date = self.calendar.selectedDate()
@@ -59,7 +148,6 @@ class DatePickerView(QWidget):
         if selected_date > current_date:
             QMessageBox.warning(self, "Warning", "Please select a date not greater than the current date.")
             self.calendar.setSelectedDate(current_date)
-        
 
     def update_selected_dates(self):
         selected_date = self.calendar.selectedDate()
@@ -147,6 +235,7 @@ class DatePickerView(QWidget):
         # Extracting the last observed open price
         last_observed_open_price = recent_open_prices.iloc[-1]
 
+
         # Determine if the predicted trend is upward or downward
         trend = "Upward" if predicted_open_price > last_observed_open_price else "Downward"
 
@@ -173,6 +262,219 @@ class DatePickerView(QWidget):
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+
+        if ("Trend Indicators", "SMA") in self.checked_indicators:
+            # Calculate SMA
+            sma_window = 20 
+            stock_data["SMA"] = ta.trend.sma_indicator(close=stock_data["Close"], window=sma_window)
+
+            last_sma = stock_data["SMA"].iloc[-1]
+
+            if last_sma > stock_data["Close"].iloc[-1]:
+                print("SMA predicts upward movement")
+            else:
+                print("SMA predicts downward movement")
+
+
+        if ("Trend Indicators", "EMA") in self.checked_indicators:
+            # Calculate EMA
+            ema_window = 20  
+            stock_data["EMA"] = ta.trend.ema_indicator(close=stock_data["Close"], window=ema_window)
+
+            # Extracting the last observed EMA value
+            last_ema = stock_data["EMA"].iloc[-1]
+
+            # Determine if the predicted trend is upward or downward for EMA
+            if last_ema > stock_data["Close"].iloc[-1]:
+                print("EMA predicts upward movement")
+            else:
+                print("EMA predicts downward movement")
+        
+        if ("Trend Indicators", "MACD") in self.checked_indicators:
+            # Calculate MACD
+            macd = ta.trend.macd(close=stock_data["Close"], window_slow=26, window_fast=12)
+            stock_data["MACD"] = macd.macd()
+            stock_data["MACD_signal"] = macd.macd_signal()
+
+            last_macd = stock_data["MACD"].iloc[-1]
+            last_macd_signal = stock_data["MACD_signal"].iloc[-1]
+
+            # Determine if the predicted trend is upward or downward for MACD
+            if last_macd > last_macd_signal:
+                print("MACD predicts upward movement")
+            else:
+                print("MACD predicts downward movement")
+        
+        if("Trend Indicators", "ADX") in self.checked_indicators:
+            # Calculate Average Directional Index (ADX)
+            adx_period = 14  # Example period for ADX calculation
+            stock_data["ADX"] = ta.trend.adx(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], window=adx_period)
+
+            # Extracting the last observed ADX value
+            last_adx = stock_data["ADX"].iloc[-1]
+
+            # Interpret ADX for upward or downward movement
+            if last_adx > 25:
+                print("Strong trend (ADX > 25)")
+            else:
+                print("Weak trend or no clear trend (ADX <= 25)") 
+
+        if("Trend Indicators", "CCI") in self.checked_indicators:
+            # Calculate Commodity Channel Index (CCI)
+            cci_period = 20  # Example period for CCI calculation
+            stock_data["CCI"] = ta.trend.cci(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], window=cci_period)
+
+            # Extracting the last observed CCI value
+            last_cci = stock_data["CCI"].iloc[-1]
+
+            # Interpret CCI for upward or downward movement
+            if last_cci > 0:
+                print("Upward (CCI > 0)") 
+            elif last_cci < 0:
+                print("Downward (CCI < 0)")
+            else:
+                print("No clear directional signal (CCI = 0)")
+
+        if ("Momentum Indicators", "Williams %R") in self.checked_indicators:
+            williams_r_period = 14  # Example period for Williams %R
+            stock_data["Williams %R"] = ta.momentum.WilliamsRIndicator(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], lbp=williams_r_period)
+
+            # Extracting the last observed Williams %R value
+            last_williams_r = stock_data["Williams %R"].iloc[-1]
+
+            if last_williams_r < -50:
+                print("Williams %R indicates upward movement")
+            elif last_williams_r > -50:
+                print("Williams %R indicates downward movement")
+            else:
+                print("Williams %R is neutral")
+
+        if ("Momentum Indicators", "RSI") in self.checked_indicators:
+            # Calculate RSI
+            rsi_period = 14  # Example period for RSI calculation
+            stock_data["RSI"] = ta.momentum.RSIIndicator(close=stock_data["Close"], window=rsi_period)
+
+            # Extracting the last observed RSI value
+            last_rsi = stock_data["RSI"].iloc[-1]
+
+            # Interpret the RSI value for upward or downward movement
+            if last_rsi > 70:
+                print("RSI indicates overbought and predicts downward movement")
+            elif last_rsi < 30:
+                print("RSI indicates oversold and predicts upward movement")
+            else:
+                print("RSI is within normal range and does not provide a clear prediction")
+        
+        if ("Momentum Indicators", "Stochastic Oscillator") in self.checked_indicators:
+            # Calculate Stochastic Oscillator
+            stoch_period = 14  # Example period for Stochastic Oscillator calculation
+            stock_data["%K"], stock_data["%D"] = ta.momentum.stoch(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], window=stoch_period)
+
+            # Extracting the last observed %K and %D values
+            last_percent_k = stock_data["%K"].iloc[-1]
+            last_percent_d = stock_data["%D"].iloc[-1]
+
+            # Interpret the Stochastic Oscillator for upward or downward movement
+            if last_percent_k > last_percent_d and last_percent_k > 80:
+                print("Stochastic Oscillator indicates overbought and potential downward movement")
+            elif last_percent_k < last_percent_d and last_percent_k < 20:
+                print("Stochastic Oscillator indicates oversold and potential upward movement")
+            else:
+                print("Stochastic Oscillator is within normal range and does not provide a clear directional signal")
+        
+        if ("Volume Indicators", "OBV") in self.checked_indicators:
+            stock_data["OBV"] = ta.volume.on_balance_volume(close=stock_data["Close"], volume=stock_data["Volume"])
+
+            # Extracting the last observed OBV value
+            last_obv = stock_data["OBV"].iloc[-1]
+
+            # Extracting the previous OBV value for comparison
+            previous_obv = stock_data["OBV"].iloc[-2]
+
+            # Interpret the OBV for upward or downward movement
+            if last_obv > previous_obv:
+                print("OBV indicates upward movement")
+            elif last_obv < previous_obv:
+                print("OBV indicates downward movement")
+            else:
+                print("OBV is neutral")
+
+        if ("Volume Indicators", "AD Line") in self.checked_indicators:
+            # Calculate Accumulation/Distribution Line (A/D Line)
+            stock_data["A/D Line"] = ta.volume.acc_dist_index(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], volume=stock_data["Volume"])
+
+            # Extracting the last observed A/D Line value
+            last_ad_line = stock_data["A/D Line"].iloc[-1]
+
+            # Extracting the previous A/D Line value for comparison
+            previous_ad_line = stock_data["A/D Line"].iloc[-2]
+
+            # Interpret the A/D Line for upward or downward movement
+            if last_ad_line > previous_ad_line:
+                print("A/D Line indicates upward movement")
+            elif last_ad_line < previous_ad_line:
+                print("A/D Line indicates downward movement")
+            else:
+                print("A/D Line is neutral")
+        
+        if ("Volatility Indicators", "ATR") in self.checked_indicators:
+            # Calculate Average True Range (ATR)
+            atr_period = 14  # Example period for ATR calculation
+            stock_data["ATR"] = ta.volatility.average_true_range(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], window=atr_period)
+
+            # Extracting the last observed ATR value
+            last_atr = stock_data["ATR"].iloc[-1]
+
+            # Extracting the previous ATR value for comparison
+            previous_atr = stock_data["ATR"].iloc[-2]  # Assuming you have at least two ATR values in your dataset
+
+            # Interpret the ATR for upward or downward movement
+            if last_atr > previous_atr:
+                print("ATR indicates increased volatility, which may lead to a larger price movement (upward or downward)")
+            else:
+                print("ATR indicates normal or decreased volatility, which may result in smaller price movements or consolidation")
+
+        
+        if ("Volatility Indicators", "Bollinger Bands") in self.checked_indicators:
+            # Calculate Bollinger Bands
+            bollinger_period = 20  # Example period for Bollinger Bands calculation
+            stock_data["BB_upper"], stock_data["BB_middle"], stock_data["BB_lower"] = ta.volatility.bollinger_hband(close=stock_data["Close"], window=bollinger_period, std=2)
+            stock_data["BB_width"] = stock_data["BB_upper"] - stock_data["BB_lower"]
+
+            # Extracting the last observed Bollinger Bands values
+            last_bb_upper = stock_data["BB_upper"].iloc[-1]
+            last_bb_lower = stock_data["BB_lower"].iloc[-1]
+            last_bb_width = stock_data["BB_width"].iloc[-1]
+
+            # Interpret the Bollinger Bands for upward or downward movement
+            if last_bb_upper > last_bb_upper.shift(1) and last_bb_lower < last_bb_lower.shift(1):
+                print("Bollinger Bands indicate a potential upward breakout")
+            elif last_bb_upper < last_bb_upper.shift(1) and last_bb_lower > last_bb_lower.shift(1):
+                print("Bollinger Bands indicate a potential downward breakout")
+            else:
+                print("Bollinger Bands are within normal range and do not provide a clear directional signal")
+        
+        if("Volatility Indicators", "Keltner's Channel") in self.checked_indicators:
+            # Calculate Keltner Channel
+            keltner_period = 20  # Example period for Keltner Channel calculation
+            stock_data["upper_band"], stock_data["middle_band"], stock_data["lower_band"] = ta.volatility.keltner_channel(high=stock_data["High"], low=stock_data["Low"], close=stock_data["Close"], window=keltner_period)
+
+            # Extracting the last observed upper band, middle band, and lower band values
+            last_upper_band = stock_data["upper_band"].iloc[-1]
+            last_middle_band = stock_data["middle_band"].iloc[-1]
+            last_lower_band = stock_data["lower_band"].iloc[-1]
+
+            # Extracting the last observed close price
+            last_close_price = stock_data["Close"].iloc[-1]
+
+            # Interpret Keltner Channel for upward or downward movement
+            if last_close_price > last_upper_band:
+                print("Price is above the upper band of Keltner Channel, indicating potential downward movement")
+            elif last_close_price < last_lower_band:
+                print("Price is below the lower band of Keltner Channel, indicating potential upward movement")
+            else:
+                print("Price is within the Keltner Channel bands, suggesting a neutral or ranging market")
+
 
 
 class MainWindow(QWidget):
@@ -248,6 +550,9 @@ class MainWindow(QWidget):
         # Show DatePickerView
         self.date_picker_view.setWindowTitle("Start Date Picker")
         self.date_picker_view.show()
+    
+    
+
 
     def reset_buttons(self):
         self.rblay_button.setEnabled(True)
